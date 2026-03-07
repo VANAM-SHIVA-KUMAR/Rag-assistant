@@ -1,7 +1,7 @@
 # Constitutional AI-Aligned RAG Assistant with Evaluation Suite
 
 **Author:** Shiva Kumar Vanam
-**GitHub:** [VANAM-SHIVA-KUMAR](https://github.com/VANAM-SHIVA-KUMAR) | **LinkedIn:** [shiva-kumar-vanam](https://linkedin.com/in/shiva-kumar--vanam) | **Portfolio:** [vanamshivakumar.vercel.app](https://vanamshivakumar.vercel.app)
+**GitHub:** [VANAM-SHIVA-KUMAR](https://github.com/VANAM-SHIVA-KUMAR) | **LinkedIn:** [shiva-kumar--vanam](https://linkedin.com/in/shiva-kumar--vanam/) | **Portfolio:** [vanam-shiva-kumar.github.io/Portfolio](https://vanam-shiva-kumar.github.io/Portfolio/)
 
 > *I'm Shiva Kumar Vanam — an AI/ML Engineer from Hyderabad, India, passionate about building production-ready AI systems. I specialize in LLMs, RAG pipelines, RLHF alignment, and GPU-optimized inference. I've taught AI/ML to 1,500+ students across India, and I build systems that are not just accurate, but safe, observable, and deployable.*
 
