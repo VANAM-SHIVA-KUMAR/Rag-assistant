@@ -4,7 +4,7 @@ Constitutional AI-Aligned RAG Pipeline
 Production RAG pipeline with:
   - Document ingestion + chunking
   - FAISS vector store (embedding-based retrieval)
-  - GPT-4 synthesis
+  - Gemini 2.5 Flash synthesis
   - Constitutional AI critique layer (self-check before delivery)
 """
 
@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain.schema import Document
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
@@ -25,16 +25,16 @@ from langchain.chains import RetrievalQA
 # Config
 # ---------------------------------------------------------------------------
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-# Fix 2: Fail fast with a clear error rather than a cryptic auth failure later
-if not OPENAI_API_KEY:
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY", "")
+# Fail fast with a clear error rather than a cryptic auth failure later
+if not GOOGLE_API_KEY:
     raise EnvironmentError(
-        "OPENAI_API_KEY environment variable is not set. "
-        "Run: export OPENAI_API_KEY=sk-..."
+        "GOOGLE_API_KEY (or GEMINI_API_KEY) environment variable is not set. "
+        "Set GOOGLE_API_KEY in your Render Environment tab."
     )
 
-EMBEDDING_MODEL = "text-embedding-3-small"
-LLM_MODEL = "gpt-4o"
+EMBEDDING_MODEL = "models/gemini-embedding-001"
+LLM_MODEL = "gemini-2.5-flash"
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 64
 TOP_K = 4
@@ -86,12 +86,18 @@ def chunk_documents(documents: list[Document]) -> list[Document]:
 
 def build_vector_store(chunks: list[Document]) -> FAISS:
     """Embed chunks and build a FAISS index."""
-    embeddings = OpenAIEmbeddings(model=EMBEDDING_MODEL, openai_api_key=OPENAI_API_KEY)
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model=EMBEDDING_MODEL,
+        google_api_key=GOOGLE_API_KEY,
+    )
     return FAISS.from_documents(chunks, embeddings)
 
 
 def load_vector_store(path: str) -> FAISS:
-    embeddings = OpenAIEmbeddings(model=EMBEDDING_MODEL, openai_api_key=OPENAI_API_KEY)
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model=EMBEDDING_MODEL,
+        google_api_key=GOOGLE_API_KEY,
+    )
     return FAISS.load_local(path, embeddings, allow_dangerous_deserialization=True)
 
 
@@ -115,7 +121,7 @@ Answer to review:
 {answer}
 \"\"\"
 
-First, identify any violation (yes/no). 
+First, identify any violation (yes/no).
 Then, if there is a violation, rewrite the answer to comply.
 If there is no violation, repeat the original answer unchanged.
 
@@ -129,7 +135,7 @@ Respond strictly in this JSON format:
 )
 
 
-def constitutional_critique(llm: ChatOpenAI, answer: str) -> tuple[bool, Optional[str], str]:
+def constitutional_critique(llm: ChatGoogleGenerativeAI, answer: str) -> tuple[bool, Optional[str], str]:
     """
     Run the Constitutional AI self-critique pass.
 
@@ -139,14 +145,15 @@ def constitutional_critique(llm: ChatOpenAI, answer: str) -> tuple[bool, Optiona
     principles_text = "\n".join(f"- {p}" for p in CONSTITUTIONAL_PRINCIPLES)
     prompt = _CRITIQUE_PROMPT.format(principles=principles_text, answer=answer)
 
-    raw = llm.invoke(prompt).content.strip()
+    content = llm.invoke(prompt).content
+    raw = content.strip() if isinstance(content, str) else str(content).strip()
 
-    # Strip markdown fences if present  (e.g. ```json\n{...}\n```)
+    # Strip markdown fences if present (e.g. ```json\n{...}\n```)
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
-            raw = raw[4:]   # remove the word "json"
-        raw = raw.strip()   # FIX: strip leading/trailing whitespace including \n
+            raw = raw[4:]
+    raw = raw.strip()
 
     try:
         result = json.loads(raw)
@@ -188,10 +195,10 @@ class RAGAssistant:
     """
 
     def __init__(self, vector_store: FAISS):
-        self.llm = ChatOpenAI(
+        self.llm = ChatGoogleGenerativeAI(
             model=LLM_MODEL,
             temperature=0.2,
-            openai_api_key=OPENAI_API_KEY,
+            google_api_key=GOOGLE_API_KEY,
         )
         self.retriever = vector_store.as_retriever(search_kwargs={"k": TOP_K})
         self.qa_chain = RetrievalQA.from_chain_type(
@@ -267,7 +274,7 @@ if __name__ == "__main__":
         print(f"\nQ: {q}")
         resp = assistant.query(q)
         print(f"A: {resp.answer}")
-        print(f"   Sources: {resp.sources}")
-        print(f"   Critique passed: {resp.critique_passed}")
+        print(f"  Sources: {resp.sources}")
+        print(f"  Critique passed: {resp.critique_passed}")
         if resp.critique_feedback:
-            print(f"   Critique feedback: {resp.critique_feedback}")
+            print(f"  Critique feedback: {resp.critique_feedback}")
