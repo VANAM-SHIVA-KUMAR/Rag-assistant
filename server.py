@@ -73,25 +73,28 @@ def ingest(req: IngestRequest):
     """
     global _assistant, _corpus, _metadatas, _vector_store
 
-    metas = req.metadatas or [{"source": f"doc_{len(_corpus)+i}"} for i in range(len(req.texts))]
+    try:
+        metas = req.metadatas or [{"source": f"doc_{len(_corpus)+i}"} for i in range(len(req.texts))]
 
-    # Build a small index just for the NEW documents
-    new_docs   = load_documents(req.texts, metas)
-    new_chunks = chunk_documents(new_docs)
-    new_store  = build_vector_store(new_chunks)
+        # Build a small index just for the NEW documents
+        new_docs   = load_documents(req.texts, metas)
+        new_chunks = chunk_documents(new_docs)
+        new_store  = build_vector_store(new_chunks)
 
-    if _vector_store is None:
-        # First ingest — use as-is
-        _vector_store = new_store
-    else:
-        # Incremental add: merge new index into existing one (O(new) not O(all))
-        _vector_store.merge_from(new_store)
+        if _vector_store is None:
+            # First ingest — use as-is
+            _vector_store = new_store
+        else:
+            # Incremental add: merge new index into existing one (O(new) not O(all))
+            _vector_store.merge_from(new_store)
 
-    _corpus.extend(req.texts)
-    _metadatas.extend(metas)
-    _assistant = RAGAssistant(_vector_store)
+        _corpus.extend(req.texts)
+        _metadatas.extend(metas)
+        _assistant = RAGAssistant(_vector_store)
 
-    return {"message": f"Ingested {len(req.texts)} documents. Total corpus: {len(_corpus)}."}
+        return {"message": f"Ingested {len(req.texts)} documents. Total corpus: {len(_corpus)}."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Fix 3: async endpoint with run_in_executor so the event loop isn't blocked
