@@ -199,6 +199,9 @@ class RAGAssistant:
             model=LLM_MODEL,
             temperature=0.2,
             google_api_key=GOOGLE_API_KEY,
+            transport="rest",
+            timeout=30,
+            max_retries=2,
         )
         self.retriever = vector_store.as_retriever(search_kwargs={"k": TOP_K})
         self.qa_chain = RetrievalQA.from_chain_type(
