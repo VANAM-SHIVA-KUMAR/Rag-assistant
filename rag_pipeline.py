@@ -197,11 +197,12 @@ class RAGAssistant:
     def __init__(self, vector_store: FAISS):
         self.llm = ChatGoogleGenerativeAI(
             model=LLM_MODEL,
-            temperature=0.2,
+            temperature=1.0,
+            max_output_tokens=512,
             google_api_key=GOOGLE_API_KEY,
             transport="rest",
             timeout=30,
-            max_retries=2,
+            max_retries=1,
         )
         self.retriever = vector_store.as_retriever(search_kwargs={"k": TOP_K})
         self.qa_chain = RetrievalQA.from_chain_type(
