@@ -11,6 +11,7 @@ import os
 import asyncio
 from typing import Optional
 
+from fastapi import FastAPI, HTTPException 
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
@@ -58,7 +59,10 @@ class QueryResponse(BaseModel):
 @app.get("/", include_in_schema=False)
 def root():
     return RedirectResponse(url="/docs")
-
+  
+@app.get("/health")
+def health():
+    return {"status": "ok", "index_size": len(_corpus)}
 
 @app.post("/ingest")
 def ingest(req: IngestRequest):
