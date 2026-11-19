@@ -201,7 +201,7 @@ class RAGAssistant:
             max_output_tokens=512,
             google_api_key=GOOGLE_API_KEY,
             transport="rest",
-            timeout=30,
+            timeout=60,
             max_retries=1,
         )
         self.retriever = vector_store.as_retriever(search_kwargs={"k": TOP_K})
