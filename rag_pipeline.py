@@ -34,7 +34,7 @@ if not GOOGLE_API_KEY:
     )
 
 EMBEDDING_MODEL = "models/gemini-embedding-001"
-LLM_MODEL = "gemini-2.5-flash"
+LLM_MODEL = "gemini-3.8-flash"
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 64
 TOP_K = 4
