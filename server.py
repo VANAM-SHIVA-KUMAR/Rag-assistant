@@ -11,7 +11,7 @@ import os
 import asyncio
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from rag_pipeline import (
@@ -55,9 +55,9 @@ class QueryResponse(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
-@app.get("/health")
-def health():
-    return {"status": "ok", "index_size": len(_corpus)}
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/docs")
 
 
 @app.post("/ingest")
